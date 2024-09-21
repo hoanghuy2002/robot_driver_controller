@@ -4,26 +4,31 @@
 #include "gpio_driver.h"
 
 
-#define Motor_Timer															TIM2
-#define Motor_Timer_Frequency										1000000U		/* TIM2's Frequency is 1MHz*/
-#define Motor_PWM_Frequency											1000U				/* TIM2's PWM Frequency is 1KHz*/	
-#define Motor_Timer_NumberCount_To_OverFlow			(Motor_Timer_Frequency/Motor_PWM_Frequency)
+#define Motor_Timer												TIM2
+#define Motor_Timer_Frequency									1000000U		/* TIM2's Frequency is 1MHz*/
+#define Motor_PWM_Frequency										1000U				/* TIM2's PWM Frequency is 1KHz*/	
+#define Motor_Timer_NumberCount_To_OverFlow						(uint16_t)(Motor_Timer_Frequency/Motor_PWM_Frequency)
 	
-#define Motor_Drive_Direction_1_GPIO_Port				GPIOA	
-#define Motor_Drive_Direction_1_GPIO_Pin				GPIO_Pin0
+#define Motor_Drive_ForwardDirection_1_GPIO_Port				GPIOA	
+#define Motor_Drive_ForwardDirection_1_GPIO_Pin					GPIO_Pin0
 
-#define Motor_Drive_Direction_2_GPIO_Port				GPIOA	
-#define Motor_Drive_Direction_2_GPIO_Pin				GPIO_Pin1
+#define Motor_Drive_ForwardDirection_2_GPIO_Port				GPIOA	
+#define Motor_Drive_ForwardDirection_2_GPIO_Pin					GPIO_Pin1
 
-#define Motor_Drive_InverseDirection_1_GPIO_Port			GPIOA	
-#define Motor_Drive_InverseDirection_1_GPIO_Pin				GPIO_Pin2
+#define Motor_Drive_BackwardDirection_1_GPIO_Port				GPIOA	
+#define Motor_Drive_BackwardDirection_1_GPIO_Pin				GPIO_Pin2
 
-#define Motor_Drive_InverseDirection_2_GPIO_Port			GPIOA	
-#define Motor_Drive_InverseDirection_2_GPIO_Pin				GPIO_Pin3
+#define Motor_Drive_BackwardDirection_2_GPIO_Port				GPIOA	
+#define Motor_Drive_BackwardDirection_2_GPIO_Pin				GPIO_Pin3
+
+#define Motor_Drive_ForwardDirection_1_Channel								TIMER_Channel_1
+#define Motor_Drive_ForwardDirection_2_Channel								TIMER_Channel_2
+#define Motor_Drive_BackwardDirection_1_Channel                             TIMER_Channel_3
+#define Motor_Drive_BackwardDirection_2_Channel                             TIMER_Channel_4
 	
-#define Motor_Timer_EnableCLK()					TIM2_EnableCLK()
-#define	Motor_Timer_EnableCounter()			TIM2_EnableCounter()
-#define Motor_Timer_DisableCounter()		TIM2_DisableCounter()	
+#define Motor_Timer_EnableCLK()									TIM2_EnableCLK()
+#define	Motor_Timer_EnableCounter()								TIM2_EnableCounter()
+#define Motor_Timer_DisableCounter()							TIM2_DisableCounter()	
 	
 static void Configure_Counter_Motor_Timer(void)
 {
@@ -31,10 +36,10 @@ static void Configure_Counter_Motor_Timer(void)
 	TIM_ConfigureCounterStruct Timer_Configuration = New_TIM_ConfigureCounterStruct;
 	Timer_Configuration.Timer = Motor_Timer;
 	Timer_Configuration.TIMER_AutoReloadPreload = Enable;
-	Timer_Configuration.TIMER_AutoReload = (uint16_t)(Motor_Timer_Frequency/Motor_PWM_Frequency) - 1;
+	Timer_Configuration.TIMER_AutoReload = (uint16_t)(Motor_Timer_NumberCount_To_OverFlow - 1);
 	Timer_Configuration.TIMER_Counter = 0;
 	Timer_Configuration.TIMER_DirectionMode = TIMER_UpCounterMode;
-	Timer_Configuration.TIMER_PreScaler = GetTimer_Clock(Motor_Timer)/Motor_Timer_Frequency;
+	Timer_Configuration.TIMER_PreScaler =(uint16_t) (GetTimer_Clock(Motor_Timer)/Motor_Timer_Frequency);
 	TIM_ConfigureCounter(&Timer_Configuration);
 }	
 
@@ -49,27 +54,11 @@ static void Configure_Control_Motor_Timer(void)
 	TIM_ConfigureControl(&Timer_Configuration);
 }
 
-static void Configure_Channel_Motor_Drive_Direction_1_Timer(void)
+static void Setup_Motor_Channel_Timer(uint8_t Timer_Channel)
 {
-	GPIO_SetMode(Motor_Drive_Direction_1_GPIO_Port,Motor_Drive_Direction_1_GPIO_Pin,GPIO_Output_10MHz,GPIO_OP_AFPP);
 	TIM_ConfigureChannelStruct Timer_Configuration = New_TIM_ConfigureChannelStruct;
 	Timer_Configuration.Timer = Motor_Timer;
-	Timer_Configuration.TIMER_Channel = Motor_Drive_Direction_1;
-	Timer_Configuration.TIMER_ChannelDirection = TIMER_OutputChannel;
-	Timer_Configuration.TIMER_ChannelPolarity = TIMER_NoneInverted;
-	Timer_Configuration.TIMER_OutputCompareFast = Disable;
-	Timer_Configuration.TIMER_OutputComparePreload = Enable;
-	Timer_Configuration.TIMER_OutputCompareMode = TIMER_PWMMode_1;
-	Timer_Configuration.TIMER_OutputCompareClear = Disable;
-	TIM_ConfigureChannel(&Timer_Configuration);
-}
-
-static void Configure_Channel_Motor_Drive_Direction_2_Timer(void)
-{
-	GPIO_SetMode(Motor_Drive_Direction_2_GPIO_Port,Motor_Drive_Direction_2_GPIO_Pin,GPIO_Output_10MHz,GPIO_OP_AFPP);
-	TIM_ConfigureChannelStruct Timer_Configuration = New_TIM_ConfigureChannelStruct;
-	Timer_Configuration.Timer = Motor_Timer;
-	Timer_Configuration.TIMER_Channel = Motor_Drive_Direction_2;
+	Timer_Configuration.TIMER_Channel = Timer_Channel;
 	Timer_Configuration.TIMER_ChannelDirection = TIMER_OutputChannel;
 	Timer_Configuration.TIMER_ChannelPolarity = TIMER_NoneInverted;
 	Timer_Configuration.TIMER_OutputCompareFast = Disable;
@@ -80,44 +69,21 @@ static void Configure_Channel_Motor_Drive_Direction_2_Timer(void)
 }
 
 
-static void Configure_Channel_Motor_Drive_InverseDirection_1_Timer(void)
-{
-	GPIO_SetMode(Motor_Drive_InverseDirection_1_GPIO_Port,Motor_Drive_InverseDirection_1_GPIO_Pin,GPIO_Output_10MHz,GPIO_OP_AFPP);
-	TIM_ConfigureChannelStruct Timer_Configuration = New_TIM_ConfigureChannelStruct;
-	Timer_Configuration.Timer = Motor_Timer;
-	Timer_Configuration.TIMER_Channel = Motor_Drive_InverseDirection_1;
-	Timer_Configuration.TIMER_ChannelDirection = TIMER_OutputChannel;
-	Timer_Configuration.TIMER_ChannelPolarity = TIMER_NoneInverted;
-	Timer_Configuration.TIMER_OutputCompareFast = Disable;
-	Timer_Configuration.TIMER_OutputComparePreload = Enable;
-	Timer_Configuration.TIMER_OutputCompareMode = TIMER_PWMMode_1;
-	Timer_Configuration.TIMER_OutputCompareClear = Disable;
-	TIM_ConfigureChannel(&Timer_Configuration);
-}
 
-static void Configure_Channel_Motor_Drive_InverseDirection_2_Timer(void)
-{
-	GPIO_SetMode(Motor_Drive_InverseDirection_2_GPIO_Port,Motor_Drive_InverseDirection_2_GPIO_Pin,GPIO_Output_10MHz,GPIO_OP_AFPP);
-	TIM_ConfigureChannelStruct Timer_Configuration = New_TIM_ConfigureChannelStruct;
-	Timer_Configuration.Timer = Motor_Timer;
-	Timer_Configuration.TIMER_Channel = Motor_Drive_InverseDirection_2;
-	Timer_Configuration.TIMER_ChannelDirection = TIMER_OutputChannel;
-	Timer_Configuration.TIMER_ChannelPolarity = TIMER_NoneInverted;
-	Timer_Configuration.TIMER_OutputCompareFast = Disable;
-	Timer_Configuration.TIMER_OutputComparePreload = Enable;
-	Timer_Configuration.TIMER_OutputCompareMode = TIMER_PWMMode_1;
-	Timer_Configuration.TIMER_OutputCompareClear = Disable;
-	TIM_ConfigureChannel(&Timer_Configuration);
-}
 
 void Motor_Initialization(void)
 {
-	GPIO_SetMode(Motor_Drive_Direction_1_GPIO_Port,Motor_Drive_Direction_1_GPIO_Pin,GPIO_Output_10MHz,GPIO_OP_AFPP);
-	GPIO_SetMode(Motor_Drive_Direction_2_GPIO_Port,Motor_Drive_Direction_2_GPIO_Pin,GPIO_Output_10MHz,GPIO_OP_AFPP);
+	GPIO_SetMode(Motor_Drive_BackwardDirection_1_GPIO_Port,Motor_Drive_BackwardDirection_1_GPIO_Pin,GPIO_Output_10MHz,GPIO_OP_AFPP);
+	GPIO_SetMode(Motor_Drive_BackwardDirection_2_GPIO_Port,Motor_Drive_BackwardDirection_2_GPIO_Pin,GPIO_Output_10MHz,GPIO_OP_AFPP);
+	GPIO_SetMode(Motor_Drive_ForwardDirection_2_GPIO_Port,Motor_Drive_ForwardDirection_1_GPIO_Pin,GPIO_Output_10MHz,GPIO_OP_AFPP);
+	GPIO_SetMode(Motor_Drive_ForwardDirection_2_GPIO_Port,Motor_Drive_ForwardDirection_2_GPIO_Pin,GPIO_Output_10MHz,GPIO_OP_AFPP);
 	Configure_Counter_Motor_Timer();
 	Configure_Control_Motor_Timer();
-	Configure_Channel_Motor_Drive_Direction_1_Timer();
-	Configure_Channel_Motor_Drive_Direction_2_Timer();
+	Setup_Motor_Channel_Timer(Motor_Drive_ForwardDirection_1_Channel);
+	Setup_Motor_Channel_Timer(Motor_Drive_ForwardDirection_2_Channel);
+	Setup_Motor_Channel_Timer(Motor_Drive_BackwardDirection_1_Channel);
+	Setup_Motor_Channel_Timer(Motor_Drive_BackwardDirection_2_Channel);
+	Configure_Channel_Motor_Drive_ForwardDirection_2_Timer();
 	Motor_Timer_EnableCounter();
 }
 
@@ -125,6 +91,54 @@ void Motor_Configure_PWM(uint8_t Motor_Timer_Channel,uint8_t PWM_Percent)
 {
 	TIM_WriteChannelValue(Motor_Timer,Motor_Timer_Channel,(uint16_t)((PWM_Percent*Motor_Timer_NumberCount_To_OverFlow)/100));
 }
+
+void Robot_Stop()
+{
+	Motor_Timer_DisableCounter();
+	TIM_WriteChannelValue(Motor_Timer,Motor_Drive_BackwardDirection_1_Channel,0);
+	TIM_WriteChannelValue(Motor_Timer,Motor_Drive_BackwardDirection_2_Channel,0);
+	TIM_WriteChannelValue(Motor_Timer,Motor_Drive_ForwardDirection_1_Channel,0);
+	TIM_WriteChannelValue(Motor_Timer,Motor_Drive_ForwardDirection_2_Channel,0);
+}
+
+void Robot_GoForward(uint8_t Speed_Percent)
+{
+	Robot_Stop();
+	Motor_Configure_PWM(Motor_Drive_BackwardDirection_1_Channel,0);
+	Motor_Configure_PWM(Motor_Drive_BackwardDirection_2_Channel,0);
+	Motor_Configure_PWM(Motor_Drive_ForwardDirection_1_Channel,(uint8_t)(Speed_Percent*70/100));
+	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,(uint8_t)(Speed_Percent*70/100));
+	Motor_Timer_EnableCounter();
+}
+
+void Robot_GoBackward(uint8_t Speed_Percent)
+{
+	Robot_Stop();
+	Motor_Configure_PWM(Motor_Drive_BackwardDirection_1_Channel,(uint8_t)(Speed_Percent*70/100));
+	Motor_Configure_PWM(Motor_Drive_BackwardDirection_2_Channel,(uint8_t)(Speed_Percent*70/100));
+	Motor_Configure_PWM(Motor_Drive_ForwardDirection_1_Channel,0);
+	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,0);
+	Motor_Timer_EnableCounter();	
+}
+
+void Robot_TurnRight(uint8_t Speed_Percent)
+{
+	Robot_Stop();
+	Motor_Configure_PWM(Motor_Drive_BackwardDirection_1_Channel,0);
+	Motor_Configure_PWM(Motor_Drive_BackwardDirection_2_Channel,0);
+	Motor_Configure_PWM(Motor_Drive_ForwardDirection_1_Channel,0);
+	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,(uint8_t)(Speed_Percent*70/100));
+}
+
+void Robot_TurnLeft(uint8_t Speed_Percent)
+{
+	Robot_Stop();
+	Motor_Configure_PWM(Motor_Drive_BackwardDirection_1_Channel,0);
+	Motor_Configure_PWM(Motor_Drive_BackwardDirection_2_Channel,0);
+	Motor_Configure_PWM(Motor_Drive_ForwardDirection_1_Channel,(uint8_t)(Speed_Percent*70/100));
+	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,0);
+}
+
 
 
 

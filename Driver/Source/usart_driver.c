@@ -136,7 +136,7 @@ void USART_ReadData(USART_RegStruct *USART, uint8_t *Buffer)
 
 
 
-void USART_RegisterEvent(USART_RegStruct *USART,uint8_t USART_Event,void (*Event_Handler)(uint8_t))
+void USART_RegisterEvent(USART_RegStruct *USART,uint8_t USART_Event,uint8_t IRQ_Priority,void (*Event_Handler)(uint8_t))
 {
 	Disable_IRQ();
 	Handler_CallBack = Event_Handler;
@@ -156,14 +156,17 @@ void USART_RegisterEvent(USART_RegStruct *USART,uint8_t USART_Event,void (*Event
 	if(USART == USART1)
 	{
 		NVIC_Enable_IRQ(USART1_IRQ);
+		NVIC_SetPriority_IRQ(USART1_IRQ,IRQ_Priority);
 	}
 	else if(USART == USART2)
 	{
 		NVIC_Enable_IRQ(USART2_IRQ);
+		NVIC_SetPriority_IRQ(USART2_IRQ,IRQ_Priority);
 	}
 	else if(USART == USART3)
 	{
 		NVIC_Enable_IRQ(USART3_IRQ);
+		NVIC_SetPriority_IRQ(USART3_IRQ,IRQ_Priority);
 	}
 	Enable_IRQ();
 }

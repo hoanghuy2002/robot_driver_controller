@@ -4,23 +4,23 @@
 #include "rcc_driver.h"
 #include "timer_driver.h"
 
-#define Task_RunState 					1
-#define Task_BlockState					99
-#define Task_BlockWaitEvent			0
+#define Task_RunState 						1
+#define Task_BlockState						99
+#define Task_BlockWaitEvent					0
 
-#define RTOS_Total_Task 5
+#define RTOS_Total_Task 					5
 
-#define IdleTask_Symbol											-99
-#define IdleTask_Size												128
-#define RTOS_Node_Size											24
+#define IdleTask_Symbol						-99
+#define IdleTask_Size						128
+#define RTOS_Node_Size						24
 
-#define TaskTimer 								 	 TIM4
-#define TaskTimer_EnableCLK()				 TIM4_EnableCLK()
-#define TaskTimer_EnableCounter()		 TIM4_EnableCounter()
-#define TaskTimer_IRQHandler()			 TIM4_IRQHandler()
-#define TaskTimer_Priority					 10
-#define TaskTimer_IRQNumber					 TIM4_IRQ
-#define TaskTimer_Frequency					 10000U
+#define TaskTimer 							TIM4
+#define TaskTimer_EnableCLK()				TIM4_EnableCLK()
+#define TaskTimer_EnableCounter()		 	TIM4_EnableCounter()
+#define TaskTimer_IRQHandler()			 	TIM4_IRQHandler()
+#define TaskTimer_Priority					10
+#define TaskTimer_IRQNumber					TIM4_IRQ
+#define TaskTimer_Frequency					10000U
 
 
 
@@ -31,7 +31,6 @@ int8_t Create_IdleTask(void);
 void Delete_IdleTask(void);
 void Create_IdleTaskStack(void);
 
-void RTOS_Save_NextPointer(uint32_t Next_Command_Address);
 void RTOS_Save_PSPValue(uint32_t Current_SP_Value);
 volatile uint32_t* RTOS_Get_PSPValue(void);
 __attribute__((naked)) void Switch_SP_To_PSP(void);
@@ -53,7 +52,6 @@ struct RTOS_Node
 	uint8_t Task_State;
 	uint8_t Task_Priority;
 	int16_t Task_Symbol;
-	uint16_t Task_Size;
 	uint16_t Task_Tick;
 	uint32_t *Task_FirstPSP;
 	uint32_t *Task_PSP;
@@ -62,89 +60,6 @@ struct RTOS_Node
 };
 
 static struct RTOS_Node *Task_Node[RTOS_Total_Task+1];
-
-
-
-int8_t RTOS_Create_Task(void (*Task_Handler)(void),uint16_t Task_Size,uint8_t Task_Priority,int16_t Task_Symbol)
-{
-	/*Check Have any task_node before has same Task_Symbol with new task_node*/
-	for(uint8_t i=0;i<=RTOS_Number_TaskNode;i++)
-	{
-		if(Task_Node[i]->Task_Symbol == Task_Symbol)
-		{
-			return RTOS_Failure;
-		}
-	}
-	/*Create Idle Task*/
-	RTOS_Number_TaskNode ++;
-	if (RTOS_Number_TaskNode ==1)
-	{
-		if(Create_IdleTask() == RTOS_Failure)
-		{
-			return RTOS_Failure;
-		}
-	}
-	/*Check Is total task were create node over than Total node permission*/ 
-	if(RTOS_Number_TaskNode>RTOS_Total_Task)
-	{
-		RTOS_Number_TaskNode --;
-		return RTOS_OverTask;
-	}
-	
-	/*Create region for struct RTOS_Node of Task*/
-	Task_Node[RTOS_Number_TaskNode] = (struct RTOS_Node *)calloc(RTOS_Node_Size,sizeof(uint8_t));	//This struct occupied 20 byte
-	/*Check create region is successfull or failure*/
-	/*If Failure the fuction will return and abort create task*/
-	if(Task_Node[RTOS_Number_TaskNode] == NULL)
-	{
-		RTOS_Number_TaskNode --;
-		return RTOS_Failure;
-	}
-	
-	/*Create region for Stack of Task*/ 
-	Task_Node[RTOS_Number_TaskNode]->Task_PSP = (uint32_t *)calloc(Task_Size,sizeof(uint8_t));
-	/*Check create region is successfull or failure*/
-	/*If Failure the fuction will return and abort create task*/
-	if(Task_Node[RTOS_Number_TaskNode]->Task_PSP == NULL)
-	{
-		free(Task_Node[RTOS_Number_TaskNode]);
-		RTOS_Number_TaskNode --;
-		return RTOS_Failure;
-	}
-	if(RTOS_Number_TaskNode ==0)
-	{
-		Delete_IdleTask();
-	}
-	Task_Node[RTOS_Number_TaskNode]->Task_FirstPSP = Task_Node[RTOS_Number_TaskNode]->Task_PSP;
-	Task_Node[RTOS_Number_TaskNode]->Task_PSP += Task_Size/4;
-	/* Configure feature for task*/
-	Task_Node[RTOS_Number_TaskNode]->Task_Handler = Task_Handler;										// link to handler function which is define in application
-	Task_Node[RTOS_Number_TaskNode]->Task_State = Task_RunState;											// task always in run status when is created
-	Task_Node[RTOS_Number_TaskNode]->Task_Tick = 0;																	// this parameter is used for task_delay and will be block status
-	Task_Node[RTOS_Number_TaskNode]->Task_Priority = Task_Priority;									// task priority - lower value higher priority
-	Task_Node[RTOS_Number_TaskNode]->Task_Size = Task_Size;
-	Task_Node[RTOS_Number_TaskNode]->Task_Symbol = Task_Symbol;
-	Task_Node[RTOS_Number_TaskNode-1]->NextNode = Task_Node[RTOS_Number_TaskNode];				// penultimate node link to last node
-	Task_Node[RTOS_Number_TaskNode]->NextNode = Task_Node[0];												// last node link to first node (first node always is Idle_Task)		
-	
-	/*Create Register in Stack for Task*/
-	uint32_t *pPSP;
-	pPSP = (uint32_t *)Task_Node[RTOS_Number_TaskNode]->Task_PSP;
-	pPSP--;
-	*pPSP = 0x01000000; ///xPSR
-
-	pPSP--;
-	*pPSP = (uint32_t)Task_Node[RTOS_Number_TaskNode]->Task_Handler; 				/// PC
-
-	pPSP--;
-	*pPSP = 0xFFFFFFFD; ///LR
-
-	pPSP -=13;					// - 13*4 byte region for 13 normal register (R0-R12), each normal register occupied 4 byte
-	
-	Task_Node[RTOS_Number_TaskNode]->Task_PSP = (uint32_t *)pPSP;			//PSP of task point to 
-	
-	return RTOS_Success;
-}
 
 
 int8_t RTOS_Delete_Task(uint16_t Task_Symbol)
@@ -205,17 +120,10 @@ int8_t Create_IdleTask(void)
 	Task_Node[0]->Task_Handler = Idle_Task;
 	Task_Node[0]->Task_State = Task_RunState;
 	Task_Node[0]->Task_Tick = 0;
-	Task_Node[0]->Task_Size = IdleTask_Size;
 	Task_Node[0]->Task_Symbol =	IdleTask_Symbol;
 	Task_Node[0]->Task_Priority = 255;
 	
 	return RTOS_Success;
-}
-
-void Delete_IdleTask(void)
-{
-	free(Task_Node[0]->Task_FirstPSP);														/*free memory stack of idle task*/
-	free(Task_Node[0]);																			/*free memory RTOS_Node struct of idle task*/
 }
 
 void Create_IdleTaskStack(void)
@@ -241,33 +149,6 @@ void Create_IdleTaskStack(void)
 	Task_Node[0]->Task_PSP = (uint32_t *)pPSP;			//PSP of task point to R0
 }
 
-void Create_TaskTimer(void)
-{
-	TaskTimer_EnableCLK();
-	TIM_ConfigureCounterStruct CustomTimer = New_TIM_ConfigureCounterStruct;
-	CustomTimer.Timer = TaskTimer;
-	CustomTimer.TIMER_AutoReloadPreload = Enable;
-	CustomTimer.TIMER_DirectionMode = TIMER_UpCounterMode;
-	CustomTimer.TIMER_Counter =0;
-	CustomTimer.TIMER_PreScaler = (uint16_t)(GetTimer_Clock(TaskTimer)/TaskTimer_Frequency);
-	CustomTimer.TIMER_AutoReload = (uint16_t)(TaskTimer_Tick*TaskTimer_Frequency);
-	TIM_ConfigureCounter(&CustomTimer);
-}
-
-
-void RTOS_Run_Task(void)
-{
-	if(RTOS_Number_TaskNode >= 1)
-	{
-		// Run RTOS's kernel
-		Disable_IRQ();
-		Create_TaskTimer();
-		Switch_SP_To_PSP();
-		TIM_ConfigureInterrupt(TaskTimer,TIMER_UpdateInterrupt,TaskTimer_Priority,TaskTimer_IRQNumber);
-		NVIC_SetPending_IRQ(TaskTimer_IRQNumber);
-		Enable_IRQ();
-	}
-}
 
 void UnBlock_Task(void)
 {
@@ -283,32 +164,6 @@ void UnBlock_Task(void)
 	}
 }
 
-void RTOS_Delay_Task(float Time_Delay)
-{
-	/*
-	__asm volatile ("PUSH {LR}");
-	__asm volatile ("POP {R0}");
-	__asm volatile ("BL RTOS_Save_NextPointer");
-	*/
-	if(Time_Delay == Task_DelayWaitEvent)
-	{
-		Task_Node[Task_CurrentNode]->Task_State = Task_BlockWaitEvent;
-	}
-	else
-	{
-		Task_Node[Task_CurrentNode]->Task_Tick = RTOS_Tick+(uint16_t)Time_Delay;
-		Task_Node[Task_CurrentNode]->Task_State = Task_BlockState;
-	}
-	SystemPending_PENSV();
-}
-
-
-void RTOS_Save_NextPointer(uint32_t Next_Command_Address)
-{
-	uint32_t *pPSP = (uint32_t *)(Task_Node[Task_CurrentNode]->Task_FirstPSP+Task_Node[Task_CurrentNode]->Task_Size/4);
-	pPSP -=2;
-	*pPSP = Next_Command_Address;
-}
 
 void RTOS_Save_PSPValue(uint32_t Current_SP_Value)
 {
@@ -368,7 +223,7 @@ void TaskTimer_IRQHandler()
 	TIM4->SR &= ~(uint32_t)(1<<0);
 	RTOS_Tick++;
 	UnBlock_Task();
-	SystemPending_PENSV();
+	System_SetPending_PENSV();
 }
 
 void PendSV_Handler(void)
@@ -400,6 +255,134 @@ void PendSV_Handler(void)
 void Idle_Task(void)
 {
 	while(1);
+}
+
+void Create_TaskTimer(void)
+{
+	TaskTimer_EnableCLK();
+	TIM_ConfigureCounterStruct CustomTimer = New_TIM_ConfigureCounterStruct;
+	CustomTimer.Timer = TaskTimer;
+	CustomTimer.TIMER_AutoReloadPreload = Enable;
+	CustomTimer.TIMER_DirectionMode = TIMER_UpCounterMode;
+	CustomTimer.TIMER_Counter =0;
+	CustomTimer.TIMER_PreScaler = (uint16_t)(GetTimer_Clock(TaskTimer)/TaskTimer_Frequency);
+	CustomTimer.TIMER_AutoReload = (uint16_t)(TaskTimer_Tick*TaskTimer_Frequency);
+	TIM_ConfigureCounter(&CustomTimer);
+}
+
+
+int8_t RTOS_Create_Task(void (*Task_Handler)(void),uint16_t Task_Size,uint8_t Task_Priority,int16_t Task_Symbol)
+{
+	/*Check Have any task_node before has same Task_Symbol with new task_node*/
+	for(uint8_t i=0;i<=RTOS_Number_TaskNode;i++)
+	{
+		if(Task_Node[i]->Task_Symbol == Task_Symbol)
+		{
+			return RTOS_Failure;
+		}
+	}
+	/*Create Idle Task*/
+	RTOS_Number_TaskNode ++;
+	if (RTOS_Number_TaskNode ==1)
+	{
+		if(Create_IdleTask() == RTOS_Failure)
+		{
+			return RTOS_Failure;
+		}
+	}
+	/*Check Is total task were create node over than Total node permission*/ 
+	if(RTOS_Number_TaskNode>RTOS_Total_Task)
+	{
+		RTOS_Number_TaskNode --;
+		return RTOS_OverTask;
+	}
+	
+	/*Create region for struct RTOS_Node of Task*/
+	Task_Node[RTOS_Number_TaskNode] = (struct RTOS_Node *)calloc(RTOS_Node_Size,sizeof(uint8_t));	//This struct occupied 20 byte
+	/*Check create region is successfull or failure*/
+	/*If Failure the fuction will return and abort create task*/
+	if(Task_Node[RTOS_Number_TaskNode] == NULL)
+	{
+		RTOS_Number_TaskNode --;
+		return RTOS_Failure;
+	}
+	
+	/*Create region for Stack of Task*/ 
+	Task_Node[RTOS_Number_TaskNode]->Task_PSP = (uint32_t *)calloc(Task_Size,sizeof(uint8_t));
+	/*Check create region is successfull or failure*/
+	/*If Failure the fuction will return and abort create task*/
+	if(Task_Node[RTOS_Number_TaskNode]->Task_PSP == NULL)
+	{
+		free(Task_Node[RTOS_Number_TaskNode]);
+		RTOS_Number_TaskNode --;
+		return RTOS_Failure;
+	}
+	if(RTOS_Number_TaskNode ==0)
+	{
+		Delete_IdleTask();
+	}
+	Task_Node[RTOS_Number_TaskNode]->Task_FirstPSP = Task_Node[RTOS_Number_TaskNode]->Task_PSP;
+	Task_Node[RTOS_Number_TaskNode]->Task_PSP += Task_Size/4;
+	/* Configure feature for task*/
+	Task_Node[RTOS_Number_TaskNode]->Task_Handler = Task_Handler;										// link to handler function which is define in application
+	Task_Node[RTOS_Number_TaskNode]->Task_State = Task_RunState;											// task always in run status when is created
+	Task_Node[RTOS_Number_TaskNode]->Task_Tick = 0;																	// this parameter is used for task_delay and will be block status
+	Task_Node[RTOS_Number_TaskNode]->Task_Priority = Task_Priority;									// task priority - lower value higher priority
+	Task_Node[RTOS_Number_TaskNode]->Task_Symbol = Task_Symbol;
+	Task_Node[RTOS_Number_TaskNode-1]->NextNode = Task_Node[RTOS_Number_TaskNode];				// penultimate node link to last node
+	Task_Node[RTOS_Number_TaskNode]->NextNode = Task_Node[0];												// last node link to first node (first node always is Idle_Task)		
+	
+	/*Create Register in Stack for Task*/
+	uint32_t *pPSP;
+	pPSP = (uint32_t *)Task_Node[RTOS_Number_TaskNode]->Task_PSP;
+	pPSP--;
+	*pPSP = 0x01000000; ///xPSR
+
+	pPSP--;
+	*pPSP = (uint32_t)Task_Node[RTOS_Number_TaskNode]->Task_Handler; 				/// PC
+
+	pPSP--;
+	*pPSP = 0xFFFFFFFD; ///LR
+
+	pPSP -=13;					// - 13*4 byte region for 13 normal register (R0-R12), each normal register occupied 4 byte
+	
+	Task_Node[RTOS_Number_TaskNode]->Task_PSP = (uint32_t *)pPSP;			//PSP of task point to 
+	
+	return RTOS_Success;
+}
+
+void Delete_IdleTask(void)
+{
+	free(Task_Node[0]->Task_FirstPSP);														/*free memory stack of idle task*/
+	free(Task_Node[0]);																			/*free memory RTOS_Node struct of idle task*/
+}
+
+void RTOS_Run_Task(void)
+{
+	if(RTOS_Number_TaskNode >= 1)
+	{
+		// Run RTOS's kernel
+		Disable_IRQ();
+		Create_TaskTimer();
+		Switch_SP_To_PSP();
+		TIM_ConfigureInterrupt(TaskTimer,TIMER_UpdateInterrupt,TaskTimer_Priority,TaskTimer_IRQNumber);
+		NVIC_SetPending_IRQ(TaskTimer_IRQNumber);
+		Enable_IRQ();
+	}
+}
+
+void RTOS_Delay_Task(float Time_Delay)
+{
+	if(Time_Delay == Task_DelayWaitEvent)
+	{
+		Task_Node[Task_CurrentNode]->Task_State = Task_BlockWaitEvent;
+	}
+	else
+	{
+		Task_Node[Task_CurrentNode]->Task_Tick = RTOS_Tick+(uint16_t)Time_Delay;
+		Task_Node[Task_CurrentNode]->Task_State = Task_BlockState;
+	}
+	System_SetPending_PENSV();
 }
 
 

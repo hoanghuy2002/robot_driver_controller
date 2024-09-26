@@ -56,30 +56,24 @@ void SysTick_DelayUs(uint32_t MicroSecond)
 }
 
 
-void SystickIRQ_Ms(uint32_t MiliSecond)
+void Setup_SystickIRQ_Ms(uint32_t MiliSecond)
 {
 	Disable_IRQ();
 	uint32_t Counter = MiliSecond*(HCLK/1000);
-	uint32_t *Pointer = (uint32_t *)0xE000E014;
-	*Pointer = Counter-1;
-	Pointer = (uint32_t *)0xE000E018;
-	*Pointer =0;
-	Pointer = (uint32_t *)0xE000E010;
-	*Pointer = 0x07;
+	SYSTICK->CurrentValue_Register = 0;
+	SYSTICK->ReloadValue_Register = Counter;
+	SYSTICK->ControlStatus_Register = 6;
 	Enable_IRQ();
 	
 }
 
-void SystickIRQ_Us(uint32_t MicroSecond)
+void Setup_SystickIRQ_Us(uint32_t MicroSecond)
 {
 	Disable_IRQ();
 	uint32_t Counter = MicroSecond*(HCLK/1000000);
-	uint32_t *Pointer = (uint32_t *)0xE000E014;
-	*Pointer = Counter-1;
-	Pointer = (uint32_t *)0xE000E018;
-	*Pointer =0;
-	Pointer = (uint32_t *)0xE000E010;
-	*Pointer = 0x07;
+	SYSTICK->CurrentValue_Register = 0;
+	SYSTICK->ReloadValue_Register = Counter;
+	SYSTICK->ControlStatus_Register = 6;
 	Enable_IRQ();
 }
 

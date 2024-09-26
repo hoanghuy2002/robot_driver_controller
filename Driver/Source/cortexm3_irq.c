@@ -43,11 +43,30 @@ void NVIC_SetPriority_IRQ(uint8_t IRQ_Number, uint8_t IRQ_Priority)
     }
 }
 
-void SystemPending_PENSV()
+void System_SetPending_PENSV()
 {
 	uint32_t *Pointer = (uint32_t *)0xE000ED04;
 	*Pointer |= (1<<28);
 }
+
+void System_ClearPending_PENSV()
+{
+	uint32_t *Pointer = (uint32_t *)0xE000ED04;
+	*Pointer |= (1<<27);
+}
+
+void System_SetPending_Systick()
+{
+	uint32_t *Pointer = (uint32_t *)0xE000ED04;
+	*Pointer |= (1<<26);
+}
+
+void System_ClearPending_Systick()
+{
+	uint32_t *Pointer = (uint32_t *)0xE000ED04;
+	*Pointer |= (1<<25);
+}
+
 
 
 

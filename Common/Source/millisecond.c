@@ -2,11 +2,11 @@
 #include "rcc_driver.h"
 
 #define MilliSecond_Timer										TIM1
-#define MilliSecond_Timer_Frequency					10000U //1000Hz	
+#define MilliSecond_Timer_Frequency								10000U //1000Hz	
 
-#define MilliSecond_EnableCLK()							TIM1_EnableCLK()
-#define MilliSecond_EnableCounter()					TIM1_EnableCounter()
-#define MilliSecond_DisableCounter()				TIM1_DisableCounter()
+#define MilliSecond_EnableCLK()									TIM1_EnableCLK()
+#define MilliSecond_EnableCounter()								TIM1_EnableCounter()
+#define MilliSecond_DisableCounter()							TIM1_DisableCounter()
 
 static void Timer_Counter_Setup(void)
 {

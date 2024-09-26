@@ -1,4 +1,5 @@
 #include "usart_driver.h"
+#include "rcc_driver.h"
 #include "cortexm3_irq.h"
 #include "gpio_driver.h"
 #include <stdlib.h>
@@ -10,31 +11,54 @@ Function_CallBack Handler_CallBack;
 
 void USART_Init(USART_ConfigStruct *USART_Config)
 {
-	uint32_t CLK =36000000;
+	uint32_t USART_CLK =0;
 	
 	/*Enable Pin use for USART*/
-	switch(USART_Config->USART_Mode)
-	{
-		case USART_RX_Mode: 	GPIO_SetMode(GPIOA,GPIO_Pin3,GPIO_Input,GPIO_IP_PUPD);
-								break;
-		case USART_TX_Mode: 	GPIO_SetMode(GPIOA,GPIO_Pin2,GPIO_Output_10MHz,GPIO_OP_AFPP);
-								break;
-		case USART_TXRX_Mode:	GPIO_SetMode(GPIOA,GPIO_Pin3,GPIO_Input,GPIO_IP_PUPD);
-								GPIO_SetMode(GPIOA,GPIO_Pin2,GPIO_Output_10MHz,GPIO_OP_AFPP);
-								break;
-	}
 	/*Enable Clock Peripheral for USART*/
 	if(USART_Config->USART == USART1)
 	{
 		USART1_EnableCLK();
+		USART_CLK = GetAPB1_Clock();
+		switch(USART_Config->USART_Mode)
+		{
+			case USART_RX_Mode: 	GPIO_SetMode(GPIOA,GPIO_Pin10,GPIO_Input,GPIO_IP_PUPD);
+									break;
+			case USART_TX_Mode: 	GPIO_SetMode(GPIOA,GPIO_Pin9,GPIO_Output_10MHz,GPIO_OP_AFPP);
+									break;
+			case USART_TXRX_Mode:	GPIO_SetMode(GPIOA,GPIO_Pin10,GPIO_Input,GPIO_IP_PUPD);
+									GPIO_SetMode(GPIOA,GPIO_Pin9,GPIO_Output_10MHz,GPIO_OP_AFPP);
+									break;
+		}
 	}
 	else if(USART_Config->USART == USART2)
 	{
 		USART2_EnableCLK();
+		USART_CLK = GetAPB2_Clock();
+		switch(USART_Config->USART_Mode)
+		{
+			case USART_RX_Mode: 	GPIO_SetMode(GPIOA,GPIO_Pin3,GPIO_Input,GPIO_IP_PUPD);
+									break;
+			case USART_TX_Mode: 	GPIO_SetMode(GPIOA,GPIO_Pin2,GPIO_Output_10MHz,GPIO_OP_AFPP);
+									break;
+			case USART_TXRX_Mode:	GPIO_SetMode(GPIOA,GPIO_Pin3,GPIO_Input,GPIO_IP_PUPD);
+									GPIO_SetMode(GPIOA,GPIO_Pin2,GPIO_Output_10MHz,GPIO_OP_AFPP);
+									break;
+		}
 	}
 	else if(USART_Config->USART == USART3)
 	{
 		USART3_EnableCLK();
+		USART_CLK = GetAPB2_Clock();
+		switch(USART_Config->USART_Mode)
+		{
+			case USART_RX_Mode: 	GPIO_SetMode(GPIOB,GPIO_Pin11,GPIO_Input,GPIO_IP_PUPD);
+									break;
+			case USART_TX_Mode: 	GPIO_SetMode(GPIOB,GPIO_Pin10,GPIO_Output_10MHz,GPIO_OP_AFPP);
+									break;
+			case USART_TXRX_Mode:	GPIO_SetMode(GPIOB,GPIO_Pin11,GPIO_Input,GPIO_IP_PUPD);
+									GPIO_SetMode(GPIOB,GPIO_Pin11,GPIO_Output_10MHz,GPIO_OP_AFPP);
+									break;
+		}
 	}
 	/*Configuration of USART Mode*/
 	USART_Config->USART->CR1 &= ~(uint32_t)(3<<2);
@@ -52,7 +76,7 @@ void USART_Init(USART_ConfigStruct *USART_Config)
 	USART_Config->USART->CR3 &= ~(uint32_t)(USART_Config->USART_HWFlowControl<<8);
 	USART_Config->USART->CR3 |= (uint32_t)(USART_Config->USART_HWFlowControl<<8);
 	/*Configuration of USART Baudrate*/
-	double USARTDIV = (double)(CLK)/(USART_Config->USART_Baudrate*16);
+	double USARTDIV = (double)(USART_CLK)/(USART_Config->USART_Baudrate*16);
 	uint16_t DIV_Mantissa =(uint16_t) USARTDIV;
 	float Frac =  (float) ((USARTDIV - DIV_Mantissa)*16);
 	uint8_t DIV_Fraction = (uint8_t) Frac;

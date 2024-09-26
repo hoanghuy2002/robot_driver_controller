@@ -381,7 +381,7 @@ typedef struct
 
 
 /*define_TIMER_Polarity*/
-#define TIMER_NoneInverted   				0U			/*Active on High Level or Rising Edge*/
+#define TIMER_NoneInverted   					0U			/*Active on High Level or Rising Edge*/
 #define TIMER_Inverted							1U			/*Active on Low Level or Falling Edge*/
 
 

@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "gpio_driver.h": "c"
-    }
+        "gpio_driver.h": "c",
+        "i2c_driver.h": "c",
+        "robot_driver.h": "c"
+    },
+    "makefile.makefilePath": "D:\\hoc\\final thesis\\Compile\\Makefile"
 }

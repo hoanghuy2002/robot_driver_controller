@@ -29,7 +29,7 @@ typedef struct
 */
 #define USART_RX_Mode				1
 #define USART_TX_Mode				2
-#define USART_TXRX_Mode			3
+#define USART_TXRX_Mode				3
 
 /*
 *@USART_WordLength
@@ -101,7 +101,7 @@ typedef struct
 void USART_Init(USART_ConfigStruct *USART_Config);
 void USART_WriteData(USART_RegStruct *USART, uint8_t *Buffer,uint8_t Buffer_Length);
 void USART_ReadData(USART_RegStruct *USART, uint8_t *Buffer);
-void USART_RegisterEvent(USART_RegStruct *USART,uint8_t USART_Event,void (*Event_Handler)(uint8_t));
+void USART_RegisterEvent(USART_RegStruct *USART,uint8_t USART_Event,uint8_t IRQ_Priority,void (*Event_Handler)(uint8_t));
 void USART_UnregisterEvent(USART_RegStruct *USART,uint8_t USART_Event);
 void USART1_IRQHandler(void);
 void USART2_IRQHandler(void);

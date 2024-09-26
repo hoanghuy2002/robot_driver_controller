@@ -4,7 +4,7 @@
 #include "gpio_driver.h"
 
 
-#define Motor_Timer												TIM2
+
 #define Motor_Timer_Frequency									1000000U		/* TIM2's Frequency is 1MHz*/
 #define Motor_PWM_Frequency										1000U				/* TIM2's PWM Frequency is 1KHz*/	
 #define Motor_Timer_NumberCount_To_OverFlow						(uint16_t)(Motor_Timer_Frequency/Motor_PWM_Frequency)
@@ -21,14 +21,9 @@
 #define Motor_Drive_BackwardDirection_2_GPIO_Port				GPIOA	
 #define Motor_Drive_BackwardDirection_2_GPIO_Pin				GPIO_Pin3
 
-#define Motor_Drive_ForwardDirection_1_Channel								TIMER_Channel_1
-#define Motor_Drive_ForwardDirection_2_Channel								TIMER_Channel_2
-#define Motor_Drive_BackwardDirection_1_Channel                             TIMER_Channel_3
-#define Motor_Drive_BackwardDirection_2_Channel                             TIMER_Channel_4
 	
 #define Motor_Timer_EnableCLK()									TIM2_EnableCLK()
-#define	Motor_Timer_EnableCounter()								TIM2_EnableCounter()
-#define Motor_Timer_DisableCounter()							TIM2_DisableCounter()	
+
 	
 static void Configure_Counter_Motor_Timer(void)
 {
@@ -83,8 +78,6 @@ void Motor_Initialization(void)
 	Setup_Motor_Channel_Timer(Motor_Drive_ForwardDirection_2_Channel);
 	Setup_Motor_Channel_Timer(Motor_Drive_BackwardDirection_1_Channel);
 	Setup_Motor_Channel_Timer(Motor_Drive_BackwardDirection_2_Channel);
-	Configure_Channel_Motor_Drive_ForwardDirection_2_Timer();
-	Motor_Timer_EnableCounter();
 }
 
 void Motor_Configure_PWM(uint8_t Motor_Timer_Channel,uint8_t PWM_Percent)
@@ -92,52 +85,7 @@ void Motor_Configure_PWM(uint8_t Motor_Timer_Channel,uint8_t PWM_Percent)
 	TIM_WriteChannelValue(Motor_Timer,Motor_Timer_Channel,(uint16_t)((PWM_Percent*Motor_Timer_NumberCount_To_OverFlow)/100));
 }
 
-void Robot_Stop()
-{
-	Motor_Timer_DisableCounter();
-	TIM_WriteChannelValue(Motor_Timer,Motor_Drive_BackwardDirection_1_Channel,0);
-	TIM_WriteChannelValue(Motor_Timer,Motor_Drive_BackwardDirection_2_Channel,0);
-	TIM_WriteChannelValue(Motor_Timer,Motor_Drive_ForwardDirection_1_Channel,0);
-	TIM_WriteChannelValue(Motor_Timer,Motor_Drive_ForwardDirection_2_Channel,0);
-}
 
-void Robot_GoForward(uint8_t Speed_Percent)
-{
-	Robot_Stop();
-	Motor_Configure_PWM(Motor_Drive_BackwardDirection_1_Channel,0);
-	Motor_Configure_PWM(Motor_Drive_BackwardDirection_2_Channel,0);
-	Motor_Configure_PWM(Motor_Drive_ForwardDirection_1_Channel,(uint8_t)(Speed_Percent*70/100));
-	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,(uint8_t)(Speed_Percent*70/100));
-	Motor_Timer_EnableCounter();
-}
-
-void Robot_GoBackward(uint8_t Speed_Percent)
-{
-	Robot_Stop();
-	Motor_Configure_PWM(Motor_Drive_BackwardDirection_1_Channel,(uint8_t)(Speed_Percent*70/100));
-	Motor_Configure_PWM(Motor_Drive_BackwardDirection_2_Channel,(uint8_t)(Speed_Percent*70/100));
-	Motor_Configure_PWM(Motor_Drive_ForwardDirection_1_Channel,0);
-	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,0);
-	Motor_Timer_EnableCounter();	
-}
-
-void Robot_TurnRight(uint8_t Speed_Percent)
-{
-	Robot_Stop();
-	Motor_Configure_PWM(Motor_Drive_BackwardDirection_1_Channel,0);
-	Motor_Configure_PWM(Motor_Drive_BackwardDirection_2_Channel,0);
-	Motor_Configure_PWM(Motor_Drive_ForwardDirection_1_Channel,0);
-	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,(uint8_t)(Speed_Percent*70/100));
-}
-
-void Robot_TurnLeft(uint8_t Speed_Percent)
-{
-	Robot_Stop();
-	Motor_Configure_PWM(Motor_Drive_BackwardDirection_1_Channel,0);
-	Motor_Configure_PWM(Motor_Drive_BackwardDirection_2_Channel,0);
-	Motor_Configure_PWM(Motor_Drive_ForwardDirection_1_Channel,(uint8_t)(Speed_Percent*70/100));
-	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,0);
-}
 
 
 

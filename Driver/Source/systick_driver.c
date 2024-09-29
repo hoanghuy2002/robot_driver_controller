@@ -19,8 +19,8 @@ static uint32_t HCLK;
  */
 void SystickTimer_Init(uint32_t SystemClock_Value)
 {
-    HCLK =SystemClock_Value/8;
-    SYSTICK->ControlStatus_Register |= (1<<4);
+    HCLK =SystemClock_Value;
+    SYSTICK->ControlStatus_Register |= (1<<2);
 }
 
 void SystickTimer_DeInit()
@@ -58,23 +58,19 @@ void SysTick_DelayUs(uint32_t MicroSecond)
 
 void Setup_SystickIRQ_Ms(uint32_t MiliSecond)
 {
-	Disable_IRQ();
 	uint32_t Counter = MiliSecond*(HCLK/1000);
 	SYSTICK->CurrentValue_Register = 0;
 	SYSTICK->ReloadValue_Register = Counter;
 	SYSTICK->ControlStatus_Register = 6;
-	Enable_IRQ();
 	
 }
 
 void Setup_SystickIRQ_Us(uint32_t MicroSecond)
 {
-	Disable_IRQ();
 	uint32_t Counter = MicroSecond*(HCLK/1000000);
 	SYSTICK->CurrentValue_Register = 0;
 	SYSTICK->ReloadValue_Register = Counter;
-	SYSTICK->ControlStatus_Register = 6;
-	Enable_IRQ();
+	SYSTICK->ControlStatus_Register |= 0x02;
 }
 
 

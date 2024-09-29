@@ -15,13 +15,9 @@
 #define IdleTask_Size						128
 #define RTOS_Node_Size						24
 
-#define TaskTimer 							TIM4
-#define TaskTimer_EnableCLK()				TIM4_EnableCLK()
-#define TaskTimer_EnableCounter()		 	TIM4_EnableCounter()
-#define TaskTimer_IRQHandler()			 	TIM4_IRQHandler()
+#define TaskTimer_EnableCounter()		 	Systick_Enable()
+#define TaskTimer_IRQHandler()			 	SysTick_Handler()
 #define TaskTimer_Priority					10
-#define TaskTimer_IRQNumber					TIM4_IRQ
-#define TaskTimer_Frequency					10000U
 
 
 
@@ -258,19 +254,6 @@ void Idle_Task(void)
 	while(1);
 }
 
-void Create_TaskTimer(void)
-{
-	TaskTimer_EnableCLK();
-	TIM_ConfigureCounterStruct CustomTimer = New_TIM_ConfigureCounterStruct;
-	CustomTimer.Timer = TaskTimer;
-	CustomTimer.TIMER_AutoReloadPreload = Enable;
-	CustomTimer.TIMER_DirectionMode = TIMER_UpCounterMode;
-	CustomTimer.TIMER_Counter =0;
-	CustomTimer.TIMER_PreScaler = (uint16_t)(GetTimer_Clock(TaskTimer)/TaskTimer_Frequency);
-	CustomTimer.TIMER_AutoReload = (uint16_t)(TaskTimer_Tick*TaskTimer_Frequency);
-	TIM_ConfigureCounter(&CustomTimer);
-}
-
 
 int8_t RTOS_Create_Task(void (*Task_Handler)(void),uint16_t Task_Size,uint8_t Task_Priority,int16_t Task_Symbol)
 {
@@ -364,10 +347,11 @@ void RTOS_Run_Task(void)
 	{
 		// Run RTOS's kernel
 		Disable_IRQ();
-		Create_TaskTimer();
+		SystickTimer_Init(GetAHB_Clock());
+		Setup_SystickIRQ_Ms(10);
+		System_SetPriority_IRQ(Systick_IRQ,TaskTimer_Priority);
+		System_SetPending_Systick();
 		Switch_SP_To_PSP();
-		TIM_ConfigureInterrupt(TaskTimer,TIMER_UpdateInterrupt,TaskTimer_Priority,TaskTimer_IRQNumber);
-		NVIC_SetPending_IRQ(TaskTimer_IRQNumber);
 		Enable_IRQ();
 	}
 }
@@ -380,7 +364,7 @@ void RTOS_Delay_Task(float Time_Delay)
 	}
 	else
 	{
-		Task_Node[Task_CurrentNode]->Task_Tick = RTOS_Tick+(uint16_t)Time_Delay;
+		Task_Node[Task_CurrentNode]->Task_Tick = (uint16_t)(RTOS_Tick+Time_Delay);
 		Task_Node[Task_CurrentNode]->Task_State = Task_BlockState;
 	}
 	System_SetPending_PENSV();

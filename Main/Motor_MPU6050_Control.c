@@ -6,27 +6,26 @@
 #include "ultrasonic.h"
 #include "rcc_driver.h"
 #include "mpu6050_driver.h"
-#include "cortexm3_irq.h"
 
 int16_t Begin_Angle = 0;
 int16_t Angle = 0;
 float Filter_Value = 0;
 
+static void Count_Task(void)
+{
+    while ((1))
+    {
+        volatile static uint8_t data = 0;
+        RTOS_Delay_Task(500/Task_TickMiliSecond);
+        data +=1;
+    }
+    
+}
+
 int main()
 {
-    uint8_t Response = 0;
-    System_SetPriority_IRQ(Systick_IRQ,3);
-    System_SetPending_Systick();
-    SystickTimer_Init(GetAHB_Clock());
-    MPU6050_Setup();
-    MPU6050_Setfilter(MPU6050_Z_Axis,&Filter_Value);
-    while (1)
-    {
-        int16_t Data = 0;
-        SysTick_DelayMs(50);
-        MPU6050_Measure_Angle_Rotation(MPU6050_Z_Axis,0.05,Filter_Value,&Data);
-		Angle += Data-Begin_Angle;
-    }
+    RTOS_Create_Task(&Count_Task,256,2,0xf2);
+    RTOS_Run_Task();
     
     
     

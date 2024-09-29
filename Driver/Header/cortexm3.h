@@ -31,7 +31,16 @@ typedef struct
 #define NVIC ((NVIC_RegStruct *)0xE000E100)
 
 
-/*define_IRQ Number*/
+/*define System_IRQ_Number*/
+#define Memory_IRQ          4U
+#define BusFault_IRQ        5U
+#define UsageFault_IRQ      6U
+#define SVCall_IRQ          11U
+#define Debug_IRQ           12U
+#define PendSV_IRQ          14U
+#define Systick_IRQ         15U
+
+/*define NVIC_IRQ_Number*/
 #define WWDG_IRQ            0U
 #define PVD_IRQ             1U
 #define TAMPER_IRQ          2U

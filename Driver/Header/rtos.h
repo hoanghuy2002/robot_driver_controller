@@ -8,7 +8,7 @@
 
 #define TaskTimer_Tick							 0.01				// 10ms
 #define Task_TickMiliSecond					 (TaskTimer_Tick*1000)
-#define Task_TickSencond						 TaskTimer_Tick
+#define Task_TickSencond					 TaskTimer_Tick
 #define Task_DelayWaitEvent					 -0.16f
 
 int8_t RTOS_Create_Task(void (*Task_Handler)(void),uint16_t Task_Size,uint8_t Task_Priority,int16_t Task_Symbol);

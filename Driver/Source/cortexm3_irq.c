@@ -18,29 +18,38 @@ void Enable_IRQ()
 }
 	
 
-void NVIC_Enable_IRQ(uint8_t IRQ_Number)
+void NVIC_Enable_IRQ(uint8_t NVIC_IRQ_Number)
 {
 	
-  NVIC->SetEnable_IRQ[IRQ_Number/32] |= (uint32_t)(1<<(IRQ_Number-(IRQ_Number/32)*32));
+  NVIC->SetEnable_IRQ[NVIC_IRQ_Number/32] |= (uint32_t)(1<<(NVIC_IRQ_Number-(NVIC_IRQ_Number/32)*32));
 }
 
-void NVIC_Disable_IRQ(uint8_t IRQ_Number)
+void NVIC_Disable_IRQ(uint8_t NVIC_IRQ_Number)
 {
-    NVIC->ClearEnable_IRQ[IRQ_Number/32] |= (uint32_t)(1<<(IRQ_Number-(IRQ_Number/32)*32));
+    NVIC->ClearEnable_IRQ[NVIC_IRQ_Number/32] |= (uint32_t)(1<<(NVIC_IRQ_Number-(NVIC_IRQ_Number/32)*32));
 }
 
-void NVIC_SetPending_IRQ(uint8_t IRQ_Number)
+void NVIC_SetPending_IRQ(uint8_t NVIC_IRQ_Number)
 {
-    NVIC->SetPending_IRQ[IRQ_Number/32] |= (uint32_t)(1<<(IRQ_Number-(IRQ_Number/32)*32));
+    NVIC->SetPending_IRQ[NVIC_IRQ_Number/32] |= (uint32_t)(1<<(NVIC_IRQ_Number-(NVIC_IRQ_Number/32)*32));
 }
 
 
-void NVIC_SetPriority_IRQ(uint8_t IRQ_Number, uint8_t IRQ_Priority)
+void NVIC_SetPriority_IRQ(uint8_t NVIC_IRQ_Number, uint8_t NVIC_IRQ_Priority)
 {
-    if (IRQ_Priority <= 15)
+    if (NVIC_IRQ_Priority <= 15)
     {
-      NVIC->IRQPriority[IRQ_Number] = (uint8_t)(IRQ_Priority<<4);
+      NVIC->IRQPriority[NVIC_IRQ_Number] = (uint8_t)(NVIC_IRQ_Priority<<4);
     }
+}
+
+void System_SetPriority_IRQ(uint8_t System_IRQ_Number,uint8_t System_IRQ_Priority)
+{
+	uint32_t *Pointer = (uint32_t *)0xE000ED18;
+	uint8_t Position = 0;
+	Position = (uint32_t)((System_IRQ_Number-4)/4);
+	*(Pointer+Position) &= ~(0xFF<<(System_IRQ_Number%4*8));
+	*(Pointer+Position) |= (System_IRQ_Priority<<(System_IRQ_Number%4*8+4));
 }
 
 void System_SetPending_PENSV()

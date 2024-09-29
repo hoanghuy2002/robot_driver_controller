@@ -6,7 +6,7 @@
 #include "ultrasonic.h"
 #include "rcc_driver.h"
 #include "mpu6050_driver.h"
-
+#include "cortexm3_irq.h"
 
 int16_t Begin_Angle = 0;
 int16_t Angle = 0;
@@ -15,6 +15,8 @@ float Filter_Value = 0;
 int main()
 {
     uint8_t Response = 0;
+    System_SetPriority_IRQ(Systick_IRQ,3);
+    System_SetPending_Systick();
     SystickTimer_Init(GetAHB_Clock());
     MPU6050_Setup();
     MPU6050_Setfilter(MPU6050_Z_Axis,&Filter_Value);

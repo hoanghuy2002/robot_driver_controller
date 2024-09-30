@@ -615,7 +615,7 @@ TIM_Status TIM_WriteChannelValue(TIM_RegStruct *Timer,uint8_t TIMER_Channel, uin
 
  */
 
-TIM_Status TIM_ReadChannelValue(TIM_RegStruct *Timer,uint8_t TIMER_Channel, uint16_t *TIMER_ChannelValue)
+uint16_t TIM_ReadChannelValue(TIM_RegStruct *Timer,uint8_t TIMER_Channel)
 {
 	/*Check suitable parameter*/
 	if(Timer==TIM1 || Timer==TIM2 || Timer==TIM3 || Timer==TIM4 || Timer==TIM5 || Timer==TIM8)
@@ -632,9 +632,16 @@ TIM_Status TIM_ReadChannelValue(TIM_RegStruct *Timer,uint8_t TIMER_Channel, uint
 	}
 	else return TIM_ParameterError;
 	volatile uint32_t *Pointer;
-	Pointer = &Timer->CCR1+1*TIMER_Channel;
-	*TIMER_ChannelValue =(uint16_t)*Pointer;
-	return TIM_Success;
+	Pointer = &(Timer->CCR1);
+	Pointer += TIMER_Channel;
+	return (uint16_t)*Pointer;
+}
+
+
+uint8_t TIM_ReadFlag(TIM_RegStruct *Timer,uint8_t TIMER_Flag)
+{
+	if ((Timer->SR & TIMER_Flag)==0) return 0;
+	else return 1;
 }
 
 
@@ -685,3 +692,4 @@ TIM_Status TIM_ConfigureInterrupt(TIM_RegStruct *Timer,uint8_t TIM_InterruptEven
 	NVIC_SetPriority_IRQ(TIM_IRQNumber,TIM_InterruptPriority);
 	return TIM_Success;
 }
+

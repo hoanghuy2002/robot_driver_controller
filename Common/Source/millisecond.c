@@ -1,12 +1,12 @@
 #include "millisecond.h"
 #include "rcc_driver.h"
 
-#define MilliSecond_Timer										TIM1
+#define MilliSecond_Timer										TIM4
 #define MilliSecond_Timer_Frequency								10000U //1000Hz	
 
-#define MilliSecond_EnableCLK()									TIM1_EnableCLK()
-#define MilliSecond_EnableCounter()								TIM1_EnableCounter()
-#define MilliSecond_DisableCounter()							TIM1_DisableCounter()
+#define MilliSecond_EnableCLK()									TIM4_EnableCLK()
+#define MilliSecond_EnableCounter()								TIM4_EnableCounter()
+#define MilliSecond_DisableCounter()							TIM4_DisableCounter()
 
 static void Timer_Counter_Setup(void)
 {
@@ -32,7 +32,7 @@ void MilliSecond_Start(void)
 	TIM_WriteCountingValue(MilliSecond_Timer,0);
 }
 
-uint8_t MilliSecond_Stop(void)
+uint16_t MilliSecond_Stop(void)
 {
 	uint16_t data = 0;
 	TIM_ReadCountingValue(MilliSecond_Timer,&data);

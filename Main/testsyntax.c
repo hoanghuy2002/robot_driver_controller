@@ -3,7 +3,7 @@
 
 int main()
 {
-    uint8_t test = 7;
-    uint8_t data = test%4*8+4;
+    uint8_t data = 0;
+    data = !data;
     printf("%d",data);
 }

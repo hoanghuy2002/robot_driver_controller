@@ -121,10 +121,13 @@ void Ultrasonic_Trigger(void)
 
 float Ultrasonic_Get_Distance(uint8_t Ultrasonic_Channel)
 {
-	uint16_t Data =0;
-	TIM_ReadChannelValue(Ultrasonic_Timer,Ultrasonic_Channel,&Data);
-	// return (float)((Data-Start_Trigger_Time)/58.0);
-	return Data;
+	volatile uint16_t Data =0;
+	if(TIM_ReadFlag(Ultrasonic_Timer,Ultrasonic_Channel+1)==1)
+	{
+		Data = TIM_ReadChannelValue(Ultrasonic_Timer,Ultrasonic_Channel);
+		return (float)((Data-Start_Trigger_Time)/58.0);
+	}
+	else return 1000.0;
 }
 
 

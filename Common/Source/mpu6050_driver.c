@@ -16,7 +16,7 @@
 
 #define MPU6050_I2C								I2C1
 
-
+static float Filter_Value = 0;
 static void MPU6050_I2C_Setup()
 {
 	I2C_ConfigStruct I2C_Custom;
@@ -78,6 +78,7 @@ uint8_t MPU6050_Setup()
 	Response = I2C_MasterTransmit(MPU6050_I2C,I2C_7BitAddress,MPU6050_Adrress,(uint8_t *)DataSetup,2);
 	if (Response == I2C_Failure) return I2C_Failure;
 
+	MPU6050_Setfilter(MPU6050_Z_Axis,&Filter_Value);
 	return I2C_Success;
 }
 
@@ -90,7 +91,7 @@ uint8_t MPU6050_ReadValue(uint8_t Register_Address, uint8_t *Buffer_Data)
 	return Response;
 }
 
-uint8_t MPU6050_Measure_Angle_Rotation(uint8_t MPU6050_Axis,float Delta_Time,float Filter_Value, int16_t *Result)
+uint8_t MPU6050_Measure_Angle_Rotation(uint8_t MPU6050_Axis,float Delta_Time, int16_t *Result)
 {
 	uint8_t Response = 0;
 	uint8_t *Raw_Data = (uint8_t *) malloc(2*sizeof(uint8_t));
@@ -100,7 +101,8 @@ uint8_t MPU6050_Measure_Angle_Rotation(uint8_t MPU6050_Axis,float Delta_Time,flo
 	Response = MPU6050_ReadValue(MPU6050_Axis+9,Raw_Data+1);		// Read Gyro_Axis Low Value
 	if (Response == I2C_Failure) return I2C_Failure;
 	Temp = (int16_t)(*Raw_Data<<8|*(Raw_Data+1));
-	*Result = (int16_t)(((Temp/65.5)-Filter_Value)*Delta_Time);
+	Temp = (int16_t)(((Temp/65.5)-Filter_Value)*Delta_Time);
+	*Result = Temp;
 	free(Raw_Data);
 	return I2C_Success;
 }

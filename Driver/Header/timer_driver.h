@@ -485,6 +485,22 @@ typedef struct
 																										***** avaiable for TIM1 - TIM8*/				
 
 
+
+/*define_TIM_Flag*/
+#define TIMER_UpdateInterrupt_Flag						0U
+#define TIMER_Channel1_Interrupt_Flag					1u
+#define TIMER_Channel2_Interrupt_Flag					2U
+#define TIMER_Channel3_Interrupt_Flag					3U
+#define TIMER_Channel4_Interrupt_Flag					4U
+#define TIMER_COM_Interrupt_Flag						5U
+#define TIMER_Trigger_Interrupt_Flag					6U
+#define TIMER_Break_Interrupt_Flag						7U
+#define TIMER_Channel1_OverCaptureInterrupt_Flag		9U
+#define TIMER_Channel3_OverCaptureInterrupt_Flag		10U
+#define TIMER_Channel4_OverCaptureInterrupt_Flag		11U
+#define TIMER_Channel5_OverCaptureInterrupt_Flag		12U
+
+
 /**************************************************************************/
 /**************************************************************************/
 /**************************************************************************/
@@ -509,7 +525,8 @@ TIM_Status TIM_ReadCountingValue(TIM_RegStruct *Timer,uint16_t* TIMER_CountingVa
 TIM_Status TIM_WritePrescalerValue(TIM_RegStruct *Timer,uint16_t TIMER_PrescalerValue);
 TIM_Status TIM_ReadPrescalerValue(TIM_RegStruct *Timer,uint16_t* TIMER_PrescalerValue);
 TIM_Status TIM_WriteChannelValue(TIM_RegStruct *Timer,uint8_t TIMER_Channel, uint16_t TIMER_ChannelValue);
-TIM_Status TIM_ReadChannelValue(TIM_RegStruct *Timer,uint8_t TIMER_Channel, uint16_t *TIMER_ChannelValue);
+uint16_t TIM_ReadChannelValue(TIM_RegStruct *Timer,uint8_t TIMER_Channel);
+uint8_t TIM_ReadFlag(TIM_RegStruct *Timer,uint8_t TIMER_Flag);
 
 TIM_Status TIM_ConfigureInterrupt(TIM_RegStruct *Timer,uint8_t TIM_InterruptEvent,uint8_t TIM_InterruptPriority,uint8_t TIM_IRQNumber);
 

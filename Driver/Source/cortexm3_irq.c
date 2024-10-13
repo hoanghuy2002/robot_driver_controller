@@ -1,5 +1,4 @@
 
-#include <math.h>
 #include "cortexm3_irq.h"
 
 
@@ -52,7 +51,7 @@ void System_SetPriority_IRQ(uint8_t System_IRQ_Number,uint8_t System_IRQ_Priorit
 	*(Pointer+Position) |= (System_IRQ_Priority<<(System_IRQ_Number%4*8+4));
 }
 
-void System_SetPending_PENSV()
+void System_SetPending_PendSV()
 {
 	uint32_t *Pointer = (uint32_t *)0xE000ED04;
 	*Pointer |= (1<<28);

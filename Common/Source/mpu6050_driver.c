@@ -94,16 +94,14 @@ uint8_t MPU6050_ReadValue(uint8_t Register_Address, uint8_t *Buffer_Data)
 uint8_t MPU6050_Measure_Angle_Rotation(uint8_t MPU6050_Axis,float Delta_Time, int16_t *Result)
 {
 	uint8_t Response = 0;
-	uint8_t *Raw_Data = (uint8_t *) malloc(2*sizeof(uint8_t));
+	uint8_t Raw_Data[2] = {0,0};
 	int16_t Temp = 0;
-	Response = MPU6050_ReadValue(MPU6050_Axis+8,Raw_Data);			// Read Gyro_Axis High value 
+	Response = MPU6050_ReadValue(MPU6050_Axis+8,&Raw_Data[0]);			// Read Gyro_Axis High value 
 	if (Response == I2C_Failure) return I2C_Failure;
-	Response = MPU6050_ReadValue(MPU6050_Axis+9,Raw_Data+1);		// Read Gyro_Axis Low Value
+	Response = MPU6050_ReadValue(MPU6050_Axis+9,&Raw_Data[1]);		// Read Gyro_Axis Low Value
 	if (Response == I2C_Failure) return I2C_Failure;
-	Temp = (int16_t)(*Raw_Data<<8|*(Raw_Data+1));
-	Temp = (int16_t)(((Temp/65.5)-Filter_Value)*Delta_Time);
-	*Result = Temp;
-	free(Raw_Data);
+	Temp = (int16_t)(Raw_Data[0]<<8|(Raw_Data[1]));
+	*Result = (int16_t)(((Temp/65.5)-Filter_Value)*Delta_Time);
 	return I2C_Success;
 }
 

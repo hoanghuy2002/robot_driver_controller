@@ -23,7 +23,7 @@
 #define Ultrasonic_Timer_EnableCounter()					TIM3_EnableCounter()
 #define Ultrasonic_Timer_DisableCounter()					TIM3_DisableCounter()
 
-#define Start_Trigger_Time					 				0x089AU
+#define Start_Trigger_Time					 				0x188FU
 
 static void Configure_Counter_Ultrasonic_Timer(void)
 {

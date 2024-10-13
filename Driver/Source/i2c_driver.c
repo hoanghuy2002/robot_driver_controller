@@ -70,21 +70,20 @@ void I2C_Init(I2C_ConfigStruct *I2C_Config)
 
 uint8_t I2C_SendStartSignal(I2C_RegStruct *I2C)
 {
-	uint32_t TimeOut = 0;
+	uint16_t TimeOut = 0;
 	/*Send Start Signal*/
 	I2C->CR1 |= (1<<8);
 	/*Wait to SB Bit is Set*/
 	while((I2C->SR1 &0x01)==0)
 	{
 		TimeOut ++;
-		if(TimeOut == 10000000) return I2C_Failure;
+		if(TimeOut == 100000) return I2C_Failure;
 	}
 	return I2C_Success;
 }
 
 uint8_t I2C_SendStopSignal(I2C_RegStruct *I2C)
 {
-	uint32_t Timeout = 0;
 	I2C->CR1 |= (1<<9);			/*Send Stop Signal*/
 	return I2C_Success;
 }
@@ -92,7 +91,7 @@ uint8_t I2C_SendStopSignal(I2C_RegStruct *I2C)
 uint8_t I2C_SendAddress(I2C_RegStruct *I2C,uint8_t I2C_NumberBitAddress,uint16_t I2C_SlaveAddress,uint8_t I2C_Direction)
 {
 	uint8_t Count =0;
-	uint32_t Timeout = 0;
+	uint16_t Timeout = 0;
 	if(I2C_NumberBitAddress == I2C_7BitAddress)
 	{
 		/*Send Address*/
@@ -102,7 +101,7 @@ uint8_t I2C_SendAddress(I2C_RegStruct *I2C,uint8_t I2C_NumberBitAddress,uint16_t
 		while((I2C->SR1&0x02)==0)
 		{
 			Timeout++;
-			if(Timeout == 10000000) return I2C_Failure;
+			if(Timeout == 1000) return I2C_Failure;
 			/*Acknowledge Failure*/
 			if(I2C->SR1 &(1<<10))
 			{
@@ -158,7 +157,7 @@ uint8_t I2C_SendAddress(I2C_RegStruct *I2C,uint8_t I2C_NumberBitAddress,uint16_t
 
 uint8_t I2C_MasterTransmit(I2C_RegStruct *I2C,uint8_t I2C_NumberBitAddress,uint16_t I2C_SlaveAddress,uint8_t *TransmitBuffer,uint8_t BufferLength)
 {
-	uint32_t Timeout = 0;
+	uint16_t Timeout = 0;
 	uint8_t Response = I2C_SendStartSignal(I2C);
 	if (Response == I2C_Failure) return I2C_Failure;
 	Response = I2C_SendAddress(I2C,I2C_NumberBitAddress,I2C_SlaveAddress,I2C_Transmitter);
@@ -170,7 +169,7 @@ uint8_t I2C_MasterTransmit(I2C_RegStruct *I2C,uint8_t I2C_NumberBitAddress,uint1
 		while((I2C->SR1&0x80)==0)
 		{
 			Timeout++;
-			if(Timeout==10000000) return I2C_Failure;				
+			if(Timeout==1000) return I2C_Failure;				
 		}
 		I2C->DR = *TransmitBuffer;
 		TransmitBuffer++;
@@ -180,14 +179,14 @@ uint8_t I2C_MasterTransmit(I2C_RegStruct *I2C,uint8_t I2C_NumberBitAddress,uint1
 	while((I2C->SR1&0x80)==0)
 	{
 		Timeout++;
-		if(Timeout==10000000) return I2C_Failure;				
+		if(Timeout==1000) return I2C_Failure;				
 	}
 	Timeout = 0;
 	/*Wait BTF Bit is Set*/
 	while((I2C->SR1&0x04)==0)
 	{
 		Timeout++;
-		if(Timeout==10000000) return I2C_Failure;				
+		if(Timeout==1000) return I2C_Failure;				
 	}
 	/*Send Stop Signal*/
 	Response = I2C_SendStopSignal(I2C);
@@ -197,7 +196,7 @@ uint8_t I2C_MasterTransmit(I2C_RegStruct *I2C,uint8_t I2C_NumberBitAddress,uint1
 
 uint8_t I2C_MasterReceive(I2C_RegStruct *I2C,uint8_t I2C_NumberBitAddress,uint16_t I2C_SlaveAddress,uint8_t *ReceiveBuffer,uint8_t BufferLength)
 {
-	uint32_t Timeout = 0;
+	uint16_t Timeout = 0;
 	uint8_t Response = I2C_SendStartSignal(I2C);
 	if (Response == I2C_Failure) return I2C_Failure;
 	Response = I2C_SendAddress(I2C,I2C_NumberBitAddress,I2C_SlaveAddress,I2C_Receiver);
@@ -210,7 +209,7 @@ uint8_t I2C_MasterReceive(I2C_RegStruct *I2C,uint8_t I2C_NumberBitAddress,uint16
 			while((I2C->SR1&(1<<6))==0)								  /*Wait to RXNE Bit is Set*/
 			{
 				Timeout++;
-				if(Timeout == 10000000) return I2C_Failure;
+				if(Timeout == 1000) return I2C_Failure;
 			}
 			*ReceiveBuffer = (uint8_t) I2C->DR;					/*Read Data*/
 	}
@@ -221,7 +220,7 @@ uint8_t I2C_MasterReceive(I2C_RegStruct *I2C,uint8_t I2C_NumberBitAddress,uint16
 			while((I2C->SR1&(1<<6))==0)									/*Wait to RXNE Bit is Set*/
 			{
 				Timeout++;
-				if(Timeout == 10000000) return I2C_Failure;
+				if(Timeout == 1000) return I2C_Failure;
 			}
 			if(Buffer_Index == 2)																	/*If last 2 bit remaining*/
 			{

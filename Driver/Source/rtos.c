@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include "rtos.h"
 #include "rcc_driver.h"
-#include "timer_driver.h"
 #include "systick_driver.h"
+#include "gpio_driver.h"
 
 #define Task_RunState 						1
 #define Task_BlockState						99
@@ -36,7 +36,7 @@ void RTOS_Update_NextTask(void);
 
 
 void UnBlock_Task(void);
-void PendSV_Handler(void);
+__attribute__((naked)) void PendSV_Handler(void);
 void Create_TaskTimer(void);
 	
 /***********************/
@@ -217,13 +217,12 @@ void TaskTimer_IRQHandler()
 		TaskTimer_EnableCounter();					/*Starting Count in Task Timer*/
 		Enable_IRQ();
 	}
-	TIM4->SR &= ~(uint32_t)(1<<0);
 	RTOS_Tick++;
 	UnBlock_Task();
-	System_SetPending_PENSV();
+	System_SetPending_PendSV();
 }
 
-void PendSV_Handler(void)
+__attribute__((naked)) void PendSV_Handler(void)
 {
 	
 	//Save R4-R11 to Current Task's Stack
@@ -367,7 +366,7 @@ void RTOS_Delay_Task(float Time_Delay)
 		Task_Node[Task_CurrentNode]->Task_Tick = (uint16_t)(RTOS_Tick+Time_Delay);
 		Task_Node[Task_CurrentNode]->Task_State = Task_BlockState;
 	}
-	System_SetPending_PENSV();
+	System_SetPending_PendSV();
 }
 
 

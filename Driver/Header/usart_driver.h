@@ -27,33 +27,33 @@ typedef struct
 *@USART_Mode
 *Possible options for USART_Mode
 */
-#define USART_RX_Mode				1
-#define USART_TX_Mode				2
-#define USART_TXRX_Mode				3
+#define USART_RX_Mode						1
+#define USART_TX_Mode						2
+#define USART_TXRX_Mode						3
 
 /*
 *@USART_WordLength
 *Possible options for USART_WordLength
 */
-#define USART_8Bit					0
-#define USART_9Bit					1
+#define USART_8Bit							0
+#define USART_9Bit							1
 
 /*
 *@USART_StopBit
 *Possible options for USART_StopBit
 */
-#define USART_0_5StopBit			1
-#define USART_1StopBit				0
-#define USART_1_5StopBit			3
-#define USART_2StopBit				2
+#define USART_0_5StopBit					1U
+#define USART_1StopBit						0U
+#define USART_1_5StopBit					3U
+#define USART_2StopBit						2U
 
 /*
 *@USART_Parity
 *Possible options for USART_Parity
 */
-#define USART_ParityDisable		0
-#define USART_ParityEven			2
-#define USART_ParityOdd				3
+#define USART_ParityDisable					0U
+#define USART_ParityEven					2U
+#define USART_ParityOdd						3U
 
 /*
 *@USART_Baudrate
@@ -66,19 +66,19 @@ typedef struct
 #define USART_Baudrate_19200 				19200
 #define USART_Baudrate_38400 				38400
 #define USART_Baudrate_57600 				57600
-#define USART_Baudrate_115200 			115200
-#define USART_Baudrate_230400 			230400
-#define USART_Baudrate_460800 			460800
-#define USART_Baudrate_921600 			921600
+#define USART_Baudrate_115200 				115200
+#define USART_Baudrate_230400 				230400
+#define USART_Baudrate_460800 				460800
+#define USART_Baudrate_921600 				921600
 
 /*
 *@USART_HWFlowControl
 *Possible options for USART_HWFlowControl
 */
-#define USART_FlowControl_Disable		0
-#define USART_RTS_Enable						1
-#define USART_CTS_Enable						2
-#define USART_RTSCTS_Enable					3
+#define USART_FlowControl_Disable			0U
+#define USART_RTS_Enable					1U
+#define USART_CTS_Enable					2U
+#define USART_RTSCTS_Enable					3U
 
 
 /*
@@ -86,13 +86,13 @@ typedef struct
 *Possible options for USART_Event
 */
 
-#define USART_ParityError_Event 				8
-#define USART_PermitTransmit_Event 			7
-#define USART_TransmitComplete_Event 		6
-#define USART_ReceivedData_Event				5
-#define USART_IdleDetected_Event				4
-#define USART_Error_Event								0
-#define USART_All_Event									0xFFU
+#define USART_ParityError_Event 			8U
+#define USART_PermitTransmit_Event 			7U
+#define USART_TransmitComplete_Event 		6U
+#define USART_ReceivedData_Event			5U
+#define USART_IdleDetected_Event			4U
+#define USART_Error_Event					0U
+#define USART_All_Event						0xFF
 
 
 /*

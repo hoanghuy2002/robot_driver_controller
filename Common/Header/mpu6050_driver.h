@@ -12,6 +12,6 @@
 uint8_t MPU6050_Setup(void);
 uint8_t MPU6050_Setfilter(uint8_t MPU6050_Axis,float *Filter_Value);
 uint8_t MPU6050_ReadValue(uint8_t Register_Address, uint8_t *Buffer_Data);
-uint8_t MPU6050_Measure_Angle_Rotation(uint8_t MPU6050_Axis,float Delta_Time, int16_t *Result);
+uint8_t MPU6050_Measure_Angle_Rotation(uint8_t MPU6050_Axis,float Delta_Time, float *Result);
 uint8_t MPU6050_Measure_Acceleration(uint8_t MPU6050_Axis,float *Result);
 #endif

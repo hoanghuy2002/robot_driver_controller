@@ -9,6 +9,7 @@ Function_CallBack Handler_CallBack;
 
 
 
+
 void USART_Init(USART_ConfigStruct *USART_Config)
 {
 	uint32_t USART_CLK =0;
@@ -18,7 +19,7 @@ void USART_Init(USART_ConfigStruct *USART_Config)
 	if(USART_Config->USART == USART1)
 	{
 		USART1_EnableCLK();
-		USART_CLK = GetAPB1_Clock();
+		USART_CLK = GetAPB2_Clock();
 		switch(USART_Config->USART_Mode)
 		{
 			case USART_RX_Mode: 	GPIO_SetMode(GPIOA,GPIO_Pin10,GPIO_Input,GPIO_IP_PUPD);
@@ -33,7 +34,7 @@ void USART_Init(USART_ConfigStruct *USART_Config)
 	else if(USART_Config->USART == USART2)
 	{
 		USART2_EnableCLK();
-		USART_CLK = GetAPB2_Clock();
+		USART_CLK = GetAPB1_Clock();
 		switch(USART_Config->USART_Mode)
 		{
 			case USART_RX_Mode: 	GPIO_SetMode(GPIOA,GPIO_Pin3,GPIO_Input,GPIO_IP_PUPD);
@@ -48,7 +49,7 @@ void USART_Init(USART_ConfigStruct *USART_Config)
 	else if(USART_Config->USART == USART3)
 	{
 		USART3_EnableCLK();
-		USART_CLK = GetAPB2_Clock();
+		USART_CLK = GetAPB1_Clock();
 		switch(USART_Config->USART_Mode)
 		{
 			case USART_RX_Mode: 	GPIO_SetMode(GPIOB,GPIO_Pin11,GPIO_Input,GPIO_IP_PUPD);
@@ -123,8 +124,7 @@ void USART_WriteData(USART_RegStruct *USART, uint8_t *Buffer,uint8_t Buffer_Leng
 		}
 		else
 		{
-			USART->DR |= (uint32_t)*Buffer;
-			Buffer++;
+			USART->DR |= (uint32_t)*(Buffer+i);
 		}
 			
 	}

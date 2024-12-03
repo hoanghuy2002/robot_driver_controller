@@ -1,192 +1,265 @@
 #include <stdio.h>
 #include "rtos.h"
 #include "robot_driver.h"
-#include "millisecond.h"
 #include "ultrasonic.h"
-#include "rcc_driver.h"
-#include "mpu6050_driver.h"
-#include "gpio_driver.h"
-#include "delay.h"
 #include "cortexm3_irq.h"
+#include "serial_driver.h"
+#include "rcc_driver.h"
+#include "String_Handler.h"
+#include <string.h>
 #include <stdlib.h>
 
 
-#define Kp                  0.5
-#define Ki                  0.1
-#define Kd                  0.05
-#define PID_Delta_Time      0.05
+#define Rotation_Kp                  0.5
+#define Rotation_Ki                  0.04
+#define Rotation_Kd                  0.1
+
+#define Movement_Kp                  1.3
+#define Movement_Ki                  0.1
+#define Movement_Kd                  0.1
+
+#define PID_Delta_Time               0.05
 
 #define Robot_Stop_Flag             0
-#define Robot_BackWard_Flag         -1
-#define Robot_ForWard_Flag          1
-#define Robot_TurnLeft_Flag         2
-#define Robot_TurnRight_Flag        3
+#define Robot_Movement_Flag         1
+#define Robot_Rotation_Flag         2
 
 
 
 
-int8_t Robot_Movement_Flag = Robot_TurnRight_Flag;
-volatile int16_t Robot_Angle_Target = 90;
+
+
+static int8_t Robot_State_Flag = Robot_Stop_Flag;
+volatile float Robot_Angle = 0;     // Turn-Right => Robot_Angle > 0 || Turn-Left -> Robot_Angle < 0 
+volatile float Robot_Distance = 0;
+
+
+volatile float Error_Before = 0;
+volatile float Error_Total = 0;
+volatile float Error = 0;
 volatile float Robot_PID_Result = 0;
-float Left_Distance,Center_Distance,Right_Distance = 0;
 
-
-static void PID_Task(void)
+static void Reset_PID_Parameter(void)
 {
-    volatile float Error_Before = 0;
-    volatile float Error_Total = 0;
+    Error_Total = 0;
+    Error_Before = 0;
+    Error = 0;
+    Robot_PID_Result = 0;
+}
+
+static void PID_Controller_Task(void)
+{
     while ((1))
     {
-        volatile float Error =(float)(0 - Robot_Angle_Target);
-        Robot_PID_Result = Error*Kp + (Error-Error_Before)*Kd/PID_Delta_Time + Error_Total*Ki*PID_Delta_Time;
-        if (Robot_PID_Result>100) Robot_PID_Result = 100;
-        else if (Robot_PID_Result<-100) Robot_PID_Result = -100;
-        RTOS_Delay_Task(50/Task_TickMiliSecond);
-    }
-    
-}
-
-static void Ultrasonic_Task(void)
-{
-    while (1)
-    {
-        if (Robot_Movement_Flag == Robot_ForWard_Flag)
+        if (Robot_State_Flag == Robot_Rotation_Flag)
         {
-            Left_Distance = Ultrasonic_Get_Distance(Ultrasonic_Left);
-            Center_Distance = Ultrasonic_Get_Distance(Ultrasonic_Center);
-            Right_Distance = Ultrasonic_Get_Distance(Ultrasonic_Right);
-            if (Center_Distance <= 10) 
-            {
-                if (Left_Distance < Right_Distance)
-                {
-                    Robot_Angle_Target = 90;
-                    Robot_Movement_Flag = Robot_TurnRight_Flag;
-                }
-                else
-                {
-                    Robot_Angle_Target = -90;
-                    Robot_Movement_Flag = Robot_TurnLeft_Flag;
-                }
-            }
-            else if (Left_Distance <= 10 || Right_Distance <= 10 )
-            {
-                if (Left_Distance < Right_Distance)
-                {
-                    Robot_Angle_Target = 30;
-                    Robot_Movement_Flag = Robot_TurnRight_Flag;
-                }
-                else
-                {
-                    Robot_Angle_Target = -30;
-                    Robot_Movement_Flag = Robot_TurnLeft_Flag;
-                }
-            }
-            else
-            { 
-                Robot_Movement_Flag = Robot_ForWard_Flag;
-            }
+            Error =(float)(0 - Robot_Angle);
+            Robot_PID_Result = Error*Rotation_Kp + (Error-Error_Before)*Rotation_Kd/PID_Delta_Time + Error_Total*Rotation_Ki*PID_Delta_Time;
+            Robot_PID_Result = (Robot_PID_Result/90)*100;
+            Error_Before = Error;
+            Error_Total += Error;
+            if (Robot_PID_Result>100) Robot_PID_Result = 100;
+            else if (Robot_PID_Result<-100) Robot_PID_Result = -100;
         }
-        RTOS_Delay_Task(100/Task_TickMiliSecond);
-    }
-    
-}
-
-static void MPU6050_Task(void)
-{
-    volatile uint16_t DelTa_Time = 0;
-	volatile uint8_t Response = 0;
-    unsigned char Angle_Rotation[6];
-    while (1)
-    {
-        Disable_IRQ();
-        DelTa_Time = MilliSecond_Stop();
-        volatile int16_t Temp_Angle = 0;
-        Response = MPU6050_Measure_Angle_Rotation(MPU6050_Z_Axis,DelTa_Time/1000.0,&Temp_Angle);
-        MilliSecond_Start();
-        if (Response == I2C_Success)
+        else if (Robot_State_Flag == Robot_Movement_Flag)
         {
-            GPIO_WritePin(GPIOC,GPIO_Pin13,GPIO_Low);
-            Robot_Angle_Target += Temp_Angle;
+            Error =(float)(0 - Robot_Distance);
+            Robot_PID_Result = Error*Movement_Kp + (Error-Error_Before)*Movement_Kd/PID_Delta_Time + Error_Total*Movement_Ki*PID_Delta_Time;
+            Robot_PID_Result = (Robot_PID_Result/40)*100;           // 40 cm
+            Error_Before = Error;
+            Error_Total += Error;
+            if (Robot_PID_Result>100) Robot_PID_Result = 100;
+            else if (Robot_PID_Result<-100) Robot_PID_Result = -100;
         }
         else
         {
-            GPIO_WritePin(GPIOC,GPIO_Pin13,GPIO_High);
+            // Dont do anything
+        }
+        
+        RTOS_Delay_Task(50/Task_TickMiliSecond);
+    }
+    
+}
+
+// static void Ultrasonic_Task(void)
+// {
+//     while (1)
+//     {
+//         if (Robot_Movement_Flag == Robot_ForWard_Flag)
+//         {
+//             Left_Distance = Ultrasonic_Get_Distance(Ultrasonic_Left);
+//             Center_Distance = Ultrasonic_Get_Distance(Ultrasonic_Center);
+//             Right_Distance = Ultrasonic_Get_Distance(Ultrasonic_Right);
+//             if (Center_Distance <= 10) 
+//             {
+//                 if (Left_Distance < Right_Distance)
+//                 {
+//                     Robot_Angle_Target = 90;
+//                     Robot_Movement_Flag = Robot_TurnRight_Flag;
+//                 }
+//                 else
+//                 {
+//                     Robot_Angle_Target = -90;
+//                     Robot_Movement_Flag = Robot_TurnLeft_Flag;
+//                 }
+//             }
+//             else if (Left_Distance <= 10 || Right_Distance <= 10 )
+//             {
+//                 if (Left_Distance < Right_Distance)
+//                 {
+//                     Robot_Angle_Target = 30;
+//                     Robot_Movement_Flag = Robot_TurnRight_Flag;
+//                 }
+//                 else
+//                 {
+//                     Robot_Angle_Target = -30;
+//                     Robot_Movement_Flag = Robot_TurnLeft_Flag;
+//                 }
+//             }
+//             else
+//             { 
+//                 Robot_Movement_Flag = Robot_ForWard_Flag;
+//             }
+//         }
+//         RTOS_Delay_Task(50/Task_TickMiliSecond);
+//     }
+    
+// }
+
+
+static void Distance_Angle_Calculation(void)
+{
+    while (1)
+    {
+        if (Robot_State_Flag == Robot_Rotation_Flag)
+        {
+            Robot_Angle += Robot_Get_Instantaneous_Angle();
+        }
+        else if (Robot_State_Flag == Robot_Movement_Flag)
+        {
+            Robot_Distance -= Robot_Get_Instantaneous_Distance();
+        }
+        else
+        {
+            // Dont do anything
         }
         RTOS_Delay_Task(50/Task_TickMiliSecond);
-        Enable_IRQ();
     }
     
 }
 
 static void Motor_Task(void)
 {
-    volatile uint8_t Robot_Left_Speed = 0;
-    volatile uint8_t Robot_Right_Speed = 0;
+    uint8_t Finish_Count = 0;
     while (1)
     {
-        if(Robot_Movement_Flag == Robot_ForWard_Flag)
+        if (Robot_State_Flag == Robot_Rotation_Flag)
         {
-            if (Robot_PID_Result > 0)       
+            if (Robot_PID_Result < 0)
             {
-                Robot_Right_Speed = 100;
-                Robot_Left_Speed =(int8_t) 100 - Robot_PID_Result;
+                int8_t Speed_Percent =(int8_t) -Robot_PID_Result;
+                Robot_TurnRight(Speed_Percent);
+            }
+            else 
+            {
+                int8_t Speed_Percent =(int8_t) Robot_PID_Result;
+                Robot_TurnLeft(Speed_Percent);
+            }
+            
+        }
+        else if (Robot_State_Flag ==Robot_Movement_Flag)
+        {
+            if (Robot_PID_Result < 0)           // need foward
+            {
+                int8_t Speed_Percent = (int8_t) - Robot_PID_Result;
+                Robot_GoForward(Speed_Percent,Speed_Percent);
             }
             else
             {
-                Robot_Left_Speed = 100;
-                Robot_Right_Speed =(int8_t) 100 + Robot_PID_Result;
+                int8_t Speed_Percent = (int8_t) Robot_PID_Result;
+                Robot_GoBackward(Speed_Percent,Speed_Percent);
             }
-            Robot_GoForward(Robot_Left_Speed,Robot_Right_Speed);
+            
         }
-        else if (Robot_Movement_Flag == Robot_TurnRight_Flag)
+        else
         {
-            Robot_TurnRight((int8_t) -Robot_PID_Result);
-            if (Robot_Angle_Target < 10 && Robot_Angle_Target > -10)
+            Robot_Stop();
+        }
+
+        if (Error < 3 && Error > -3)
+        {
+            Finish_Count ++;
+        }
+        else
+        {
+            Finish_Count = 0;
+        }
+        if (Finish_Count == 3)
+        {
+            if (Robot_State_Flag == Robot_Rotation_Flag)
             {
-                Robot_Movement_Flag = Robot_ForWard_Flag;
+                Serial_Write("Rotation_Okay\n");
             }
+            else if (Robot_State_Flag == Robot_Movement_Flag)
+            {
+                Serial_Write("Movement_Okay\n");
+            }
+            
+            Robot_State_Flag = Robot_Stop_Flag;
         }
-        else if (Robot_Movement_Flag == Robot_TurnLeft_Flag)
-        {
-            Robot_TurnLeft((int8_t) Robot_PID_Result);
-        }
+        
         RTOS_Delay_Task(50/Task_TickMiliSecond);
+        
     }
     
 }
 
+static void Serial_Data_Callback(void)
+{
+    char *Buffer_Pointer =(char *) Serial_Read();
+    if (String_Compare(Buffer_Pointer,"Foward"))
+    {
+        Robot_State_Flag = Robot_Movement_Flag;
+        Robot_Distance = 40;
+    }
+    else if (String_Compare(Buffer_Pointer,"Backward"))
+    {
+        Robot_State_Flag = Robot_Movement_Flag;
+        Robot_Distance = -40;
+    }
+    else if (String_Check_Data_In_String(Buffer_Pointer,"Rotate-Right"))
+    {
+        int8_t First_Index_Of_Numer = String_Find_Index_Of_Character(Buffer_Pointer,"/") + 1;
+        Robot_Angle = (float) String_Convert_String_To_IntergerNumber((Buffer_Pointer + First_Index_Of_Numer));
+        Robot_State_Flag = Robot_Rotation_Flag;
+    }
+    else if (String_Check_Data_In_String(Buffer_Pointer,"Rotate-Left"))
+    {
+        int8_t First_Index_Of_Numer = String_Find_Index_Of_Character(Buffer_Pointer,"/") + 1;
+        Robot_Angle = (float) (String_Convert_String_To_IntergerNumber((Buffer_Pointer + First_Index_Of_Numer))*-1.0);
+        Robot_State_Flag = Robot_Rotation_Flag;
+    }
+    else
+    {
+
+    }
+    
+    
+    
+}
+
+
+
 int main()
 { 
-    uint8_t Response =0;
-    GPIO_SetMode(GPIOA,GPIO_Pin6,GPIO_Output_10MHz,GPIO_OP_GPPP);
-    GPIO_WritePin(GPIOA,GPIO_Pin6,GPIO_High);
-    GPIO_SetMode(GPIOA,GPIO_Pin7,GPIO_Output_10MHz,GPIO_OP_GPPP);
-    GPIO_WritePin(GPIOA,GPIO_Pin7,GPIO_High);
-    GPIO_SetMode(GPIOC,GPIO_Pin13,GPIO_Output_10MHz,GPIO_OP_GPPP);
-    GPIO_WritePin(GPIOC,GPIO_Pin13,GPIO_High);
-    Delay_Init(GetAHB_Clock());
-    Delay_ms(1000);
-    RTOS_Create_Task(&PID_Task,512,2,0x01);
-    // RTOS_Create_Task(&Ultrasonic_Task,512,2,0x02);
-    RTOS_Create_Task(&MPU6050_Task,512,2,0x03);
-    
-	RTOS_Create_Task(&Motor_Task,512,2,0x04);
+    RTOS_Create_Task(&PID_Controller_Task,512,2,0x01);
+    // // RTOS_Create_Task(&Ultrasonic_Task,512,2,0x02);
+    RTOS_Create_Task(&Distance_Angle_Calculation,512,2,0x03);
+	RTOS_Create_Task(&Motor_Task,512,2,0x05);
     Robot_Setup();
+    Robot_Start_Measure_Distance();
+    Serial_Initialization(&Serial_Data_Callback);
     // Ultrasonic_Initialization();
-    MilliSecond_Setup();
-    Response = MPU6050_Setup();
-    if (Response == I2C_Failure)
-    {
-        for(uint8_t i = 0;i<5;i++)
-				{
-					GPIO_WritePin(GPIOC,GPIO_Pin13,GPIO_High);
-					Delay_ms(100);
-					GPIO_WritePin(GPIOC,GPIO_Pin13,GPIO_Low);
-					Delay_ms(100);
-				}
-        return 0;
-    }
-    MilliSecond_Start();
     // Ultrasonic_Trigger();
     RTOS_Run_Task();
     return 1;

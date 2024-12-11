@@ -1,20 +1,26 @@
+#include <stdlib.h>
 #include "robot_driver.h"
 #include "motor_driver.h"
 #include "mpu6050_driver.h"
 #include "rcc_driver.h"
 #include "millisecond.h"
+#include "ultrasonic.h"
 #include "delay.h"
+#include "serial_driver.h"
+#include "string_handler.h"
 
 #define Pi														3.1416
-#define Radius_Of_Wheel											3.25		// 3.25cm
+#define Radius_Of_Wheel											3.25		// 3.25cm.
+
 
 uint8_t Robot_Setup()
 {
-	Delay_Init(GetAHB_Clock());
 	Delay_ms(1000);
     Motor_Initialization();
 	Encoder_Initialization();
 	MPU6050_Setup();
+	Ultrasonic_Initialization();
+    Ultrasonic_Trigger();
 	MilliSecond_Setup();
 }
 
@@ -28,30 +34,26 @@ void Robot_Stop()
 	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,0);
 }
 
-void Robot_GoForward(int8_t Left_Speed_Percent,int8_t Right_Speed_Percent)
+void Robot_GoForward(int8_t Speed_Percent)
 {
-	if (Left_Speed_Percent < 0) Left_Speed_Percent = 0;
-	else if (Left_Speed_Percent > 100) Left_Speed_Percent =100;
+	if (Speed_Percent < 0) Speed_Percent = 0;
+	else if (Speed_Percent > 100) Speed_Percent =100;
 	
-	if (Right_Speed_Percent < 0) Right_Speed_Percent = 0;
-	else if (Right_Speed_Percent > 100) Right_Speed_Percent = 100;
 	
 	Motor_Configure_PWM(Motor_Drive_BackwardDirection_1_Channel,0);
 	Motor_Configure_PWM(Motor_Drive_BackwardDirection_2_Channel,0);
-	Motor_Configure_PWM(Motor_Drive_ForwardDirection_1_Channel,(uint8_t)(Left_Speed_Percent*100/100));
-	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,(uint8_t)(Right_Speed_Percent*100/100));
+	Motor_Configure_PWM(Motor_Drive_ForwardDirection_1_Channel,(uint8_t)(Speed_Percent*70/100));
+	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,(uint8_t)(Speed_Percent*69/100));
 }
 
-void Robot_GoBackward(int8_t Left_Speed_Percent,int8_t Right_Speed_Percent)
+void Robot_GoBackward(int8_t Speed_Percent)
 {
-	if (Left_Speed_Percent < 0) Left_Speed_Percent = 0;
-	else if (Left_Speed_Percent > 100) Left_Speed_Percent =100;
+	if (Speed_Percent < 0) Speed_Percent = 0;
+	else if (Speed_Percent > 100) Speed_Percent =100;
 
-	if (Right_Speed_Percent < 0) Right_Speed_Percent = 0;
-	else if (Right_Speed_Percent > 100) Right_Speed_Percent = 100;
 
-	Motor_Configure_PWM(Motor_Drive_BackwardDirection_1_Channel,(uint8_t)(Left_Speed_Percent*50/100));
-	Motor_Configure_PWM(Motor_Drive_BackwardDirection_2_Channel,(uint8_t)(Right_Speed_Percent*50/100));
+	Motor_Configure_PWM(Motor_Drive_BackwardDirection_1_Channel,(uint8_t)(Speed_Percent*70/100));
+	Motor_Configure_PWM(Motor_Drive_BackwardDirection_2_Channel,(uint8_t)(Speed_Percent*65/100));
 	Motor_Configure_PWM(Motor_Drive_ForwardDirection_1_Channel,0);
 	Motor_Configure_PWM(Motor_Drive_ForwardDirection_2_Channel,0);
 }
@@ -117,6 +119,20 @@ void Robot_Stop_Measure_Angle(void)
 {
 	MilliSecond_Stop();
 }
+
+uint8_t Robot_Detect_Object(void)
+{
+	uint8_t Is_Detected_Object =0;
+	float Center_Distance = Ultrasonic_Get_Distance(Ultrasonic_Center);
+	float Left_Distance = Ultrasonic_Get_Distance(Ultrasonic_Left);
+	float Right_Distance = Ultrasonic_Get_Distance(Ultrasonic_Right);
+	if (Left_Distance < 5 || Right_Distance < 5 || Center_Distance < 7)
+	{
+		Is_Detected_Object = 1;
+	}
+
+	return Is_Detected_Object;
+}	
 
 
 
